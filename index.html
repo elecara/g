@@ -794,34 +794,42 @@
     pesciolini.forEach(disegnaPesciolino);
   }
   // Samu che nuota: la foto "nuoto" attraversa ogni tanto lo sfondo
-  const imgNuoto = new Image();
-  let nuotoPronto = false, samuNuota = null, prossimoNuoto = performance.now() + 4000;
-  caricaFoto(imgNuoto, 'nuoto', ()=>{ nuotoPronto = true; });
-  function partiSamu(){
+    // ---------- Foto che nuotano nello sfondo ----------
+  // Nomi dei file delle foto (senza estensione): aggiungine o togline quanti vuoi
+  const FOTO_NUOTO = ['nuoto', 'nuoto2'];
+  // Attesa tra un passaggio e il successivo di ogni foto, in millisecondi (1000 = 1 secondo)
+  const PAUSA_MIN = 2000, PAUSA_MAX = 6000;
+  const nuotatori = FOTO_NUOTO.map((nome, i)=>{
+    const n = { img: new Image(), pronto: false, s: null, prossimo: performance.now() + 1500 + i*2500 };
+    caricaFoto(n.img, nome, ()=>{ n.pronto = true; });
+    return n;
+  });
+  function partiNuotatore(n){
     const d = Math.random()<.5 ? 1 : -1, r = piccolo() ? 34 : 44;
-    samuNuota = { x: d>0 ? -r-10 : W+r+10, y: H*.2 + Math.random()*H*.6, d, r, v: d*(piccolo() ? 1.1 : 1.4), onda: 0 };
+    n.s = { x: d>0 ? -r-10 : W+r+10, y: H*.15 + Math.random()*H*.7, d, r, v: d*(piccolo() ? 1.1+Math.random()*.6 : 1.4+Math.random()*.8), onda: Math.random()*6.28 };
   }
-  function disegnaSamu(adesso){
-    if(!nuotoPronto) return;
-    if(!samuNuota && adesso > prossimoNuoto) partiSamu();
-    const s = samuNuota; if(!s) return;
+  function disegnaNuotatore(n, adesso){
+    if(!n.pronto) return;
+    if(!n.s && adesso > n.prossimo) partiNuotatore(n);
+    const s = n.s; if(!s) return;
     s.x += s.v; s.onda += .06;
-    const y = s.y + Math.sin(s.onda)*10;
+    const y = s.y + Math.sin(s.onda)*10, img = n.img;
     // scia di bollicine
     if(Math.random() < .25) bolle.push({x:s.x - s.d*s.r, y:y + (Math.random()-.5)*s.r, r:2+Math.random()*4, v:.6+Math.random()*.6, o:Math.random()*6.28});
     cm.save();
     cm.translate(s.x, y); cm.rotate(Math.sin(s.onda)*.12);
     cm.beginPath(); cm.arc(0,0,s.r,0,6.28); cm.closePath();
     cm.save(); cm.clip();
-    const lato = Math.min(imgNuoto.naturalWidth, imgNuoto.naturalHeight);
-    cm.drawImage(imgNuoto, (imgNuoto.naturalWidth-lato)/2, (imgNuoto.naturalHeight-lato)/2, lato, lato, -s.r, -s.r, s.r*2, s.r*2);
+    const lato = Math.min(img.naturalWidth, img.naturalHeight);
+    cm.drawImage(img, (img.naturalWidth-lato)/2, (img.naturalHeight-lato)/2, lato, lato, -s.r, -s.r, s.r*2, s.r*2);
     cm.restore();
     cm.lineWidth = 3; cm.strokeStyle = '#f4b81c'; cm.stroke();
     cm.restore();
-    if(s.x < -s.r-40 || s.x > W+s.r+40){ samuNuota = null; prossimoNuoto = adesso + 12000 + Math.random()*13000; }
+    if(s.x < -s.r-40 || s.x > W+s.r+40){ n.s = null; n.prossimo = adesso + PAUSA_MIN + Math.random()*(PAUSA_MAX-PAUSA_MIN); }
   }
+  function disegnaSamu(adesso){ nuotatori.forEach(n=>disegnaNuotatore(n, adesso)); }
   // tenere sotto controllo le bolle in più create dalla scia
-  function potaBolle(){ if(bolle.length > 60) bolle.splice(22, bolle.length-60); }
+  function potaBolle(){ if(bolle.length > 70) bolle.splice(22, bolle.length-70); }
 
   ridimensiona();
   addEventListener('resize', ridimensiona);
