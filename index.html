@@ -40,6 +40,8 @@
 
   header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
   h1{font-size:clamp(30px,6vw,44px);margin:0;font-weight:800;letter-spacing:-.02em;line-height:1.05}
+  .titolo{display:flex;align-items:center;gap:14px}
+  .faccia{width:72px;height:72px;border-radius:50%;object-fit:cover;flex-shrink:0;border:3px solid var(--boa);box-shadow:0 4px 14px rgba(0,0,0,.35);background:var(--fondale)}
   .fucile{width:min(340px,100%);height:auto;overflow:visible;cursor:pointer;touch-action:manipulation}
   .fucile:focus-visible{outline:3px solid var(--boa);outline-offset:6px;border-radius:8px}
 
@@ -110,14 +112,7 @@
   .riga.salta svg.pesce{animation:salto .9s ease-out}
   @keyframes salto{0%{transform:none}35%{transform:translateY(-22px) rotate(-14deg)}70%{transform:translateY(-4px) rotate(6deg)}100%{transform:none}}
 
-  /* Backup e pulsanti finali */
-  .backup{margin-top:32px;background:var(--pannello);border:1px solid var(--bordo);border-radius:18px;padding:16px}
-  .backup h2{margin:0 0 4px;font-size:22px}
-  .backup p{margin:0 0 12px;color:var(--schiuma-2);font-size:15px}
-  .backup .ultimo{margin:12px 0 0;font-weight:700}
-  .backup .ultimo.attenzione{color:var(--boa)}
-  .riga-pulsanti{display:flex;gap:12px;flex-wrap:wrap}
-  .riga-pulsanti .btn{flex:1 1 200px}
+  /* Pulsanti finali */
   .fine{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
   .fine .btn{flex:1 1 220px}
 
@@ -173,6 +168,7 @@
   @media (max-width:560px){
     .wrap{padding:16px 14px 48px}
     header{flex-direction:column;align-items:flex-start;gap:6px}
+    .faccia{width:60px;height:60px}
     .fucile{width:100%;max-width:300px}
     .stats{grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
     .stat:last-child{grid-column:1 / -1}
@@ -206,7 +202,10 @@
   </div>
 
   <header>
-    <h1>Record di pesca<br>di Samu</h1>
+    <div class="titolo">
+      <img class="faccia" id="fotoSamu" alt="Samu" hidden>
+      <h1>Record di pesca<br>di Samu</h1>
+    </div>
     <svg class="fucile" id="fucile" viewBox="0 0 340 90" role="button" tabindex="0" aria-label="Fucile da pesca: premi per sparare">
       <g id="asta">
         <rect x="70" y="30" width="230" height="4" rx="2" fill="#cfd8dc"/>
@@ -238,10 +237,13 @@
     <label id="lblAltro" hidden>Nome del pesce
       <input id="inAltro" maxlength="24" placeholder="es. Murena" autocapitalize="words">
     </label>
-    <label>Peso (kg)
+    <label class="meta">Peso (kg)
       <input id="inPeso" type="text" inputmode="decimal" placeholder="es. 3,2" required>
     </label>
-    <label class="largo">Dove / note <em>(facoltativo)</em>
+    <label class="meta"><span>Data <em>(facoltativa)</em></span>
+      <input id="inData" type="date">
+    </label>
+    <label class="largo"><span>Dove / note <em>(facoltativo)</em></span>
       <input id="inNota" maxlength="80" placeholder="es. Secca di Capo Rosso, 12 m">
     </label>
     <button class="btn" type="submit">Spara!</button>
@@ -249,16 +251,6 @@
 
   <h2 class="sr-only">I miei pesci. Tocca un pesce per vedere tutte le catture.</h2>
   <ul class="lista" id="lista"></ul>
-
-  <section class="backup" aria-labelledby="titoloBackup">
-    <h2 id="titoloBackup">Backup</h2>
-    <div class="riga-pulsanti">
-      <button class="btn" id="btnEsporta" type="button">Esporta backup</button>
-      <button class="btn sec" id="btnImporta" type="button">Importa backup</button>
-    </div>
-    <input type="file" id="fileImport" accept=".json,application/json" hidden>
-    <p class="ultimo" id="ultimoBackup" aria-live="polite"></p>
-  </section>
 
   <div class="fine">
     <button class="btn" id="btnCondividi" type="button">Condividi i miei record</button>
@@ -326,12 +318,13 @@
   const nuovoId = pre => pre + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 
   // ---------- Dati ----------
-  // stato = { pesci:[{id,nome,c1,c2,forma,disegno,custom}], catture:[{id,pesce,peso,data,nota}], ultimoBackup }
-  function nuovoStato(){ return normalizza({pesci:[],catture:[],ultimoBackup:null}); }
+  // stato = { pesci:[{id,nome,c1,c2,forma,disegno,custom}], catture:[{id,pesce,peso,data,creata,nota}] }
+  // data = giorno scelto da Samu (può mancare), creata = quando è stata inserita (serve solo per l'ordine)
+  function nuovoStato(){ return normalizza({pesci:[],catture:[]}); }
 
-  // Controlla e ripulisce i dati (serve anche per i backup importati)
+  // Controlla e ripulisce i dati salvati
   function normalizza(s){
-    const out = {pesci:[], catture:[], ultimoBackup: typeof s.ultimoBackup==='string' ? s.ultimoBackup : null};
+    const out = {pesci:[], catture:[]};
     const nomi = new Set(), ids = new Set();
     const conCatture = new Set((Array.isArray(s.catture) ? s.catture : []).map(c=>c && c.pesce));
     (Array.isArray(s.pesci) ? s.pesci : []).forEach(p=>{
@@ -356,10 +349,13 @@
     (Array.isArray(s.catture) ? s.catture : []).forEach(c=>{
       if(!c || !ids.has(c.pesce)) return;
       const peso = Number(c.peso); if(!(peso>0 && peso<1000)) return;
-      const d = new Date(c.data); if(isNaN(d)) return;
+      const d = c.data ? new Date(c.data) : null;
+      const cr = new Date(c.creata || c.data || 0);
       out.catture.push({
         id: typeof c.id==='string' && c.id ? c.id.slice(0,40) : nuovoId('c'),
-        pesce: c.pesce, peso: Math.round(peso*100)/100, data: d.toISOString(),
+        pesce: c.pesce, peso: Math.round(peso*100)/100,
+        data: d && !isNaN(d) ? d.toISOString() : null,
+        creata: isNaN(cr) ? new Date(0).toISOString() : cr.toISOString(),
         nota: typeof c.nota==='string' ? c.nota.slice(0,80) : ''
       });
     });
@@ -367,8 +363,8 @@
   }
   // Dati della versione precedente (solo i record) -> ogni record diventa una cattura
   function daVecchiaVersione(v){
-    const catture = v.pesci.filter(p=>p && p.peso>0).map(p=>({id:nuovoId('c'), pesce:p.id, peso:p.peso, data:p.data||new Date().toISOString(), nota:''}));
-    return normalizza({pesci:v.pesci, catture, ultimoBackup:null});
+    const catture = v.pesci.filter(p=>p && p.peso>0).map(p=>({id:nuovoId('c'), pesce:p.id, peso:p.peso, data:p.data||null, creata:p.data||new Date().toISOString(), nota:''}));
+    return normalizza({pesci:v.pesci, catture});
   }
   function carica(){
     try{ const x = JSON.parse(localStorage.getItem(KEY)); if(x && Array.isArray(x.pesci)) return normalizza(x); }catch(e){}
@@ -381,10 +377,11 @@
 
   function recordDi(id){
     let best = null;
-    for(const c of stato.catture) if(c.pesce===id && (!best || c.peso>best.peso || (c.peso===best.peso && c.data<best.data))) best = c;
+    for(const c of stato.catture) if(c.pesce===id && (!best || c.peso>best.peso || (c.peso===best.peso && c.creata<best.creata))) best = c;
     return best;
   }
-  const cattureDi = id => stato.catture.filter(c=>c.pesce===id).sort((a,b)=>b.data.localeCompare(a.data));
+  // dalla più recente: conta il giorno scelto, se c'è, altrimenti quando è stata inserita
+  const cattureDi = id => stato.catture.filter(c=>c.pesce===id).sort((a,b)=>(b.data||b.creata).localeCompare(a.data||a.creata));
 
   // ---------- Disegni dei pesci (testa a destra, coda a sinistra) ----------
   const occhio = (x,y,r=2.6) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff"/><circle cx="${x+r*.25}" cy="${y}" r="${r*.55}" fill="#10303f"/>`;
@@ -507,14 +504,16 @@
     const ordinati = [...stato.pesci].sort((a,b)=>((rec.get(b.id)||{}).peso||0)-((rec.get(a.id)||{}).peso||0) || a.nome.localeCompare(b.nome,'it'));
     $('lista').innerHTML = ordinati.map(p=>{
       const r = rec.get(p.id), n = stato.catture.filter(c=>c.pesce===p.id).length, isTop = top && p.id===top.id;
-      const txtN = n ? ' · '+n+(n===1?' cattura':' catture') : '';
-      const label = `${p.nome}: ${r ? 'record '+fmt(r.peso)+' chili' : 'nessun record'}${txtN}. Apri lo storico`;
+      const txtN = n ? n+(n===1?' cattura':' catture') : '';
+      const txtData = r ? (r.data ? 'Record del '+dataLunga(r.data) : '') : 'Ancora nessun record';
+      const sottotitolo = [txtData, txtN].filter(Boolean).join(' · ');
+      const label = `${p.nome}: ${r ? 'record '+fmt(r.peso)+' chili' : 'nessun record'}${txtN ? ', '+txtN : ''}. Apri lo storico`;
       return `<li class="riga${isTop?' top':''}${p.id===flashId?' flash':''}" data-id="${esc(p.id)}">
         <button type="button" class="riga-btn" aria-label="${esc(label)}">
           ${pesceSVG(p)}
           <span class="info">
             <span class="nome">${esc(p.nome)} ${isTop?'<span class="corona">il più grosso</span>':''}</span>
-            <span class="data">${r ? 'Record del '+dataLunga(r.data) : 'Ancora nessun record'}${txtN}</span>
+            <span class="data">${sottotitolo}</span>
             <span class="barra"><i style="width:${max && r ? r.peso/max*100 : 0}%"></i></span>
           </span>
           <span class="rec">
@@ -523,12 +522,6 @@
         </button>
       </li>`;
     }).join('');
-
-    // stato del backup
-    const ub = $('ultimoBackup'), n = stato.catture.length;
-    ub.textContent = stato.ultimoBackup ? 'Ultimo backup: '+dataLunga(stato.ultimoBackup)
-      : (n ? 'Non hai ancora fatto nessun backup' : 'Ancora nessuna cattura da salvare');
-    ub.classList.toggle('attenzione', !stato.ultimoBackup && n>0);
   }
 
   let toastT;
@@ -557,6 +550,7 @@
   $('fucile').addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); spara(); }});
 
   // ---------- Nuova cattura ----------
+  $('inData').max = oggiISO();
   $('selPesce').addEventListener('change', e=>{
     $('lblAltro').hidden = e.target.value !== '__altro';
     if(e.target.value==='__altro') $('inAltro').focus();
@@ -566,7 +560,8 @@
     e.preventDefault();
     const kg = numero($('inPeso').value);
     if(!(kg>0 && kg<1000)){ toast('Inserisci un peso valido, es. 3,2'); $('inPeso').focus(); return; }
-    const giorno = oggiISO();
+    const giorno = $('inData').value;   // vuoto = nessuna data
+    if(giorno && giorno > oggiISO()){ toast('La data non può essere nel futuro'); $('inData').focus(); return; }
 
     let p;
     if($('selPesce').value==='__altro'){
@@ -583,7 +578,7 @@
     if(!p) return;
 
     const prima = recordDi(p.id), vecchio = prima ? prima.peso : 0, peso = Math.round(kg*100)/100;
-    stato.catture.push({id:nuovoId('c'), pesce:p.id, peso, data:new Date(giorno+'T12:00:00').toISOString(), nota:$('inNota').value.trim().slice(0,80)});
+    stato.catture.push({id:nuovoId('c'), pesce:p.id, peso, data: giorno ? new Date(giorno+'T12:00:00').toISOString() : null, creata:new Date().toISOString(), nota:$('inNota').value.trim().slice(0,80)});
     salva(); spara();
 
     const record = peso > vecchio;
@@ -595,7 +590,7 @@
     } else {
       toast(`Salvata nello storico. ${fmt(peso)} kg non batte il record di ${fmt(vecchio)} kg`);
     }
-    $('inPeso').value = ''; $('inNota').value = '';
+    $('inPeso').value = ''; $('inNota').value = ''; $('inData').value = '';
     $('inPeso').blur();
   });
 
@@ -606,21 +601,25 @@
     'Polpo': 'polpo',
   };
   const ESTENSIONI = ['jpg','jpeg','png','webp','JPG','JPEG','PNG','WEBP'];
+  // Carica una foto provando jpg, jpeg, png...; se non la trova non fa niente
+  function caricaFoto(img, base, quandoPronta){
+    let i = 0;
+    img.onload = ()=>{ img.onload = img.onerror = null; quandoPronta(); };
+    img.onerror = ()=>{ i++; if(i < ESTENSIONI.length) img.src = base+'.'+ESTENSIONI[i]; else img.onload = img.onerror = null; };
+    img.src = base+'.'+ESTENSIONI[0];
+  }
   function mostraFoto(p, vecchio, peso){
     const base = FOTO_RECORD[p.nome]; if(!base) return;
-    const img = $('fotoImg'); let i = 0;
-    img.onload = ()=>{
-      img.onload = img.onerror = null;
-      img.alt = 'Foto: '+p.nome;
+    caricaFoto($('fotoImg'), base, ()=>{
+      $('fotoImg').alt = 'Foto: '+p.nome;
       $('fotoTitolo').textContent = (vecchio>0 ? 'Nuovo record di ' : 'Primo record di ') + p.nome.toLowerCase() + '!';
       $('fotoTesto').textContent = fmt(peso)+' kg';
       const d = $('fotoRecord'); if(!d.open) d.showModal();
       $('fotoChiudi').focus();
-    };
-    // prova jpg, jpeg, png... finché trova la foto; se non c'è, non mostra niente
-    img.onerror = ()=>{ i++; if(i < ESTENSIONI.length) img.src = base+'.'+ESTENSIONI[i]; else img.onload = img.onerror = null; };
-    img.src = base+'.'+ESTENSIONI[0];
+    });
   }
+  // Faccia di Samu accanto al titolo: file "samu.jpg" accanto a index.html
+  caricaFoto($('fotoSamu'), 'samu', ()=>{ $('fotoSamu').hidden = false; });
   $('fotoChiudi').addEventListener('click', ()=>$('fotoRecord').close());
   $('fotoRecord').addEventListener('click', e=>{ if(e.target===e.currentTarget) e.currentTarget.close(); });
 
@@ -636,9 +635,9 @@
     $('schedaRec').innerHTML = r ? `Record <b>${fmt(r.peso)} kg</b> · ${lista.length} ${lista.length===1?'cattura':'catture'}` : 'Ancora nessuna cattura';
     $('schedaLista').innerHTML = lista.length ? lista.map(c=>`
       <li data-c="${esc(c.id)}">
-        <span class="quando">${dataLunga(c.data)}${c.nota ? `<span class="nota">${esc(c.nota)}</span>` : ''}</span>
+        <span class="quando">${c.data ? dataLunga(c.data) : ''}${c.nota ? `<span class="nota">${esc(c.nota)}</span>` : ''}</span>
         <span class="kg">${fmt(c.peso)} kg${r && c.id===r.id ? '<small>record</small>' : ''}</span>
-        <button class="del" type="button" aria-label="Elimina la cattura del ${dataLunga(c.data)}, ${fmt(c.peso)} chili">×</button>
+        <button class="del" type="button" aria-label="Elimina la cattura${c.data ? ' del '+dataLunga(c.data) : ''}, ${fmt(c.peso)} chili">×</button>
       </li>`).join('') : '<li class="vuota">Nessuna cattura per ora. Aggiungine una!</li>';
     $('schedaElimina').hidden = !p.custom;
     if(!scheda.open){
@@ -662,7 +661,7 @@
   $('schedaLista').addEventListener('click', e=>{
     const b = e.target.closest('.del'); if(!b) return;
     const cid = b.closest('li').dataset.c, c = stato.catture.find(x=>x.id===cid); if(!c) return;
-    if(!confirm(`Eliminare la cattura del ${dataLunga(c.data)} (${fmt(c.peso)} kg)?`)) return;
+    if(!confirm(`Eliminare la cattura${c.data ? ' del '+dataLunga(c.data) : ''} (${fmt(c.peso)} kg)?`)) return;
     stato.catture = stato.catture.filter(x=>x!==c);
     salva(); render(); apriScheda(schedaId);
     toast('Cattura eliminata');
@@ -686,52 +685,17 @@
   // ---------- Azzera ----------
   $('btnReset').onclick = ()=>{
     if(!confirm('Vuoi davvero cancellare tutte le catture e i record?')) return;
-    if(stato.catture.length && !stato.ultimoBackup && !confirm('Non hai nessun backup: dopo non potrai recuperarli. Continuare?')) return;
-    const ub = stato.ultimoBackup;
-    stato = nuovoStato(); stato.ultimoBackup = ub; salva(); render();
+    stato = nuovoStato(); salva(); render();
     toast('Tutto azzerato');
   };
 
-  // ---------- Backup ----------
+  // ---------- Salvataggio file ----------
   function scarica(blob, nome){
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = nome;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
   }
-  $('btnEsporta').onclick = async ()=>{
-    const dati = {app:'record-pesca-samu', versione:3, esportato:new Date().toISOString(), pesci:stato.pesci, catture:stato.catture};
-    const nome = 'backup-pesca-samu-'+oggiISO()+'.json';
-    const blob = new Blob([JSON.stringify(dati,null,2)], {type:'application/json'});
-    let fatto = false;
-    try{
-      const file = new File([blob], nome, {type:'application/json'});
-      if(navigator.canShare && navigator.canShare({files:[file]})){
-        await navigator.share({files:[file], title:'Backup record di pesca'}); fatto = true;
-      }
-    }catch(e){ if(e && e.name==='AbortError') return; }
-    if(!fatto) scarica(blob, nome);
-    stato.ultimoBackup = new Date().toISOString(); salva(); render();
-    toast('Backup pronto: '+nome);
-  };
-  $('btnImporta').onclick = ()=> $('fileImport').click();
-  $('fileImport').addEventListener('change', async e=>{
-    const f = e.target.files && e.target.files[0]; e.target.value = '';
-    if(!f) return;
-    try{
-      const x = JSON.parse(await f.text());
-      let nuovo;
-      if(x && Array.isArray(x.pesci) && Array.isArray(x.catture)) nuovo = normalizza({pesci:x.pesci, catture:x.catture, ultimoBackup:x.esportato||null});
-      else if(x && Array.isArray(x.pesci)) nuovo = daVecchiaVersione(x);
-      else throw new Error('formato');
-      const msg = `Il backup contiene ${nuovo.catture.length} ${nuovo.catture.length===1?'cattura':'catture'}.\nSostituire i dati di questo telefono?`;
-      if(!confirm(msg)) return;
-      stato = nuovo; salva(); render();
-      toast('Backup caricato');
-    }catch(err){
-      toast('Questo file non è un backup valido');
-    }
-  });
 
   // ---------- Fondale animato e festa ----------
   const mare = $('mare'), cm = mare.getContext('2d'), festa = $('festa'), cf = festa.getContext('2d');
