@@ -41,7 +41,7 @@
   header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
   h1{font-size:clamp(30px,6vw,44px);margin:0;font-weight:800;letter-spacing:-.02em;line-height:1.05}
   .titolo{display:flex;align-items:center;gap:14px}
-  .faccia{width:72px;height:72px;border-radius:50%;object-fit:cover;flex-shrink:0;border:3px solid var(--boa);box-shadow:0 4px 14px rgba(0,0,0,.35);background:var(--fondale)}
+    .faccia{width:110px;height:110px;border-radius:50%;object-fit:cover;flex-shrink:0;border:4px solid var(--boa);box-shadow:0 4px 14px rgba(0,0,0,.35);background:var(--fondale)}
   .fucile{width:min(340px,100%);height:auto;overflow:visible;cursor:pointer;touch-action:manipulation}
   .fucile:focus-visible{outline:3px solid var(--boa);outline-offset:6px;border-radius:8px}
 
@@ -168,7 +168,7 @@
   @media (max-width:560px){
     .wrap{padding:16px 14px 48px}
     header{flex-direction:column;align-items:flex-start;gap:6px}
-    .faccia{width:60px;height:60px}
+    .faccia{width:90px;height:90px}
     .fucile{width:100%;max-width:300px}
     .stats{grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
     .stat:last-child{grid-column:1 / -1}
@@ -240,10 +240,10 @@
     <label class="meta">Peso (kg)
       <input id="inPeso" type="text" inputmode="decimal" placeholder="es. 3,2" required>
     </label>
-    <label class="meta"><span>Data <em>(facoltativa)</em></span>
+    <label class="meta"><span>Data <em>(opzionale)</em></span>
       <input id="inData" type="date">
     </label>
-    <label class="largo"><span>Dove / note <em>(facoltativo)</em></span>
+    <label class="largo"><span>Dove / note <em>(opzionale)</em></span>
       <input id="inNota" maxlength="80" placeholder="es. Secca di Capo Rosso, 12 m">
     </label>
     <button class="btn" type="submit">Spara!</button>
