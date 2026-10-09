@@ -646,9 +646,16 @@
   // ---------- Foto quando si batte un record ----------
   // Per ogni pesce, il nome del file della foto SENZA estensione.
   // Il file va caricato su GitHub accanto a index.html (es. polpo.jpg).
-  const FOTO_RECORD = {
+   const FOTO_RECORD = {
     'Polpo': 'polpo',
+    'Orata': 'orata',
   };
+  // Frase sotto la foto del record (facoltativa, per ogni pesce)
+  const FRASE_RECORD = {
+    'Polpo': 'Ele aspetta un altro polpo e patate',
+    'Orata': 'Ele aspetta il bis',
+  };
+  
   const ESTENSIONI = ['jpg','jpeg','png','webp','JPG','JPEG','PNG','WEBP'];
   // Carica una foto provando jpg, jpeg, png...; se non la trova non fa niente
   function caricaFoto(img, base, quandoPronta){
@@ -662,7 +669,7 @@
     caricaFoto($('fotoImg'), base, ()=>{
       $('fotoImg').alt = 'Foto: '+p.nome;
       $('fotoTitolo').textContent = (vecchio>0 ? 'Nuovo record di ' : 'Primo record di ') + p.nome.toLowerCase() + '!';
-      $('fotoTesto').textContent = fmt(peso)+' kg';
+      $('fotoTesto').innerHTML = fmt(peso)+' kg' + (FRASE_RECORD[p.nome] ? '<span style="display:block;margin-top:8px;font-size:19px;font-weight:600;font-style:italic">“'+esc(FRASE_RECORD[p.nome])+'”</span>' : '');
       const d = $('fotoRecord'); if(!d.open) d.showModal();
       $('fotoChiudi').focus();
     });
