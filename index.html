@@ -151,6 +151,13 @@
   }
   .scheda-azioni{display:flex;flex-direction:column;gap:10px}
 
+  /* Foto che compare quando si batte un record */
+  .foto-record .scheda-corpo{padding:16px;text-align:center}
+  .foto-record img{display:block;width:100%;max-height:60vh;object-fit:contain;border-radius:16px;margin:0 auto 14px;background:rgba(0,0,0,.25)}
+  .foto-record h2{margin:2px 0 4px;font-size:26px;line-height:1.15;color:var(--boa)}
+  .foto-record p{margin:0 0 16px;font-size:20px;font-weight:800}
+  .foto-record .btn{width:100%}
+
   #toast{
     position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,180px);
     background:var(--sabbia);color:var(--testo);font-size:17px;font-family:var(--font);
@@ -275,6 +282,15 @@
       <button class="btn" type="button" id="schedaAggiungi">Aggiungi una cattura</button>
       <button class="btn sec pericolo" type="button" id="schedaElimina" hidden>Elimina questo pesce</button>
     </div>
+  </div>
+</dialog>
+
+<dialog class="scheda foto-record" id="fotoRecord" aria-labelledby="fotoTitolo">
+  <div class="scheda-corpo">
+    <img id="fotoImg" alt="">
+    <h2 id="fotoTitolo"></h2>
+    <p id="fotoTesto"></p>
+    <button class="btn" type="button" id="fotoChiudi">Grande!</button>
   </div>
 </dialog>
 
@@ -575,12 +591,38 @@
     if(record){
       toast(vecchio>0 ? `Nuovo record per ${p.nome}: ${fmt(peso)} kg (prima ${fmt(vecchio)} kg)` : `Primo record per ${p.nome}: ${fmt(peso)} kg`);
       festeggia(p.id, vecchio, peso);
+      setTimeout(()=>mostraFoto(p, vecchio, peso), ridotto ? 0 : 1300);
     } else {
       toast(`Salvata nello storico. ${fmt(peso)} kg non batte il record di ${fmt(vecchio)} kg`);
     }
     $('inPeso').value = ''; $('inNota').value = '';
     $('inPeso').blur();
   });
+
+  // ---------- Foto quando si batte un record ----------
+  // Per ogni pesce, il nome del file della foto SENZA estensione.
+  // Il file va caricato su GitHub accanto a index.html (es. polpo.jpg).
+  const FOTO_RECORD = {
+    'Polpo': 'polpo',
+  };
+  const ESTENSIONI = ['jpg','jpeg','png','webp','JPG','JPEG','PNG','WEBP'];
+  function mostraFoto(p, vecchio, peso){
+    const base = FOTO_RECORD[p.nome]; if(!base) return;
+    const img = $('fotoImg'); let i = 0;
+    img.onload = ()=>{
+      img.onload = img.onerror = null;
+      img.alt = 'Foto: '+p.nome;
+      $('fotoTitolo').textContent = (vecchio>0 ? 'Nuovo record di ' : 'Primo record di ') + p.nome.toLowerCase() + '!';
+      $('fotoTesto').textContent = fmt(peso)+' kg';
+      const d = $('fotoRecord'); if(!d.open) d.showModal();
+      $('fotoChiudi').focus();
+    };
+    // prova jpg, jpeg, png... finché trova la foto; se non c'è, non mostra niente
+    img.onerror = ()=>{ i++; if(i < ESTENSIONI.length) img.src = base+'.'+ESTENSIONI[i]; else img.onload = img.onerror = null; };
+    img.src = base+'.'+ESTENSIONI[0];
+  }
+  $('fotoChiudi').addEventListener('click', ()=>$('fotoRecord').close());
+  $('fotoRecord').addEventListener('click', e=>{ if(e.target===e.currentTarget) e.currentTarget.close(); });
 
   // ---------- Scheda con lo storico ----------
   const scheda = $('scheda');
