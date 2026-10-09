@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d6a86">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Record Samu">
+<title>Record di pesca di Samu</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231d6a86'/%3E%3Cpath d='M22 50 C32 30 70 28 84 46 L88 50 L84 54 C70 72 32 70 22 50Z' fill='%23f4b81c'/%3E%3Cpath d='M24 50 L8 36 L13 50 L8 64Z' fill='%23f4b81c'/%3E%3Ccircle cx='74' cy='46' r='4' fill='%230a2533'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --abisso:#0a2533; --fondale:#103a4e; --acqua:#1d6a86; --schiuma:#e6f4f7;
+    --schiuma-2:#bfdbe3;
+    --sabbia:#efe6d0; --boa:#f4b81c; --boa-scura:#b98400; --testo:#10303f;
+    --rosso:#ffb4a8;
+    --pannello:rgba(10,37,51,.72);
+    --bordo:rgba(230,244,247,.28);
+    --font:'Bricolage Grotesque','Segoe UI',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--font); color:var(--schiuma); min-height:100vh; font-size:1rem; line-height:1.4;
+    background:linear-gradient(180deg,var(--acqua) 0,var(--fondale) 260px,var(--abisso) 700px);
+    background-color:var(--abisso);
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:24px 16px 64px;position:relative;z-index:1}
+  :focus-visible{outline:3px solid var(--boa);outline-offset:3px}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+  /* Avviso se la pagina è aperta in un'anteprima che non esegue il codice */
+  .avviso{background:var(--boa);color:#2e2000;font-weight:700;font-size:17px;padding:14px 16px;border-radius:14px;margin:0 0 18px}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  h1{font-size:clamp(30px,6vw,44px);margin:0;font-weight:800;letter-spacing:-.02em;line-height:1.05}
+  .fucile{width:min(340px,100%);height:auto;overflow:visible;cursor:pointer;touch-action:manipulation}
+  .fucile:focus-visible{outline:3px solid var(--boa);outline-offset:6px;border-radius:8px}
+
+  /* Riepilogo */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}
+  .stat{background:var(--pannello);border:1px solid var(--bordo);border-radius:14px;padding:12px 14px}
+  .stat b{display:block;font-size:clamp(22px,4vw,28px);color:var(--boa);font-weight:800;line-height:1.1;word-break:break-word;font-variant-numeric:tabular-nums}
+  .stat b small{font-size:.6em;color:var(--schiuma-2);font-weight:700}
+  .stat > span{font-size:14px;color:var(--schiuma-2)}
+
+  /* Modulo nuova cattura */
+  .cattura{
+    background:var(--sabbia);color:var(--testo);border-radius:18px;padding:16px;
+    display:flex;gap:12px;flex-wrap:wrap;align-items:end;box-shadow:0 8px 0 rgba(0,0,0,.18);scroll-margin-top:16px
+  }
+  .cattura h2{flex-basis:100%;margin:0 0 2px;font-size:22px}
+  .cattura label{display:flex;flex-direction:column;gap:6px;font-size:15px;font-weight:700;flex:1 1 150px;min-width:0}
+  .cattura label.largo{flex:1 1 260px}
+  .cattura label[hidden]{display:none}
+  .cattura label em{font-style:normal;font-weight:600;opacity:.7}
+  .cattura input,.cattura select{
+    font:inherit;font-size:18px;font-weight:600;min-height:52px;padding:10px 12px;border-radius:12px;
+    border:2px solid #a8986e;background:#fff;color:var(--testo);width:100%;display:block
+  }
+  .cattura input[type=date]{-webkit-appearance:none;appearance:none}
+  .cattura input[type=date]::-webkit-date-and-time-value{text-align:left}
+  .cattura input::placeholder{color:#6b6450}
+  .cattura input:focus,.cattura select:focus{outline:3px solid var(--acqua);outline-offset:1px;border-color:var(--acqua)}
+
+  .btn{
+    font:inherit;font-weight:800;font-size:18px;border:0;border-radius:14px;min-height:52px;padding:12px 22px;cursor:pointer;
+    background:var(--boa);color:#2e2000;box-shadow:0 4px 0 var(--boa-scura);transition:transform .08s, box-shadow .08s;
+    touch-action:manipulation
+  }
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--boa-scura)}
+  .btn:focus-visible{outline:3px solid var(--schiuma);outline-offset:3px}
+  .btn.sec{background:rgba(230,244,247,.14);color:var(--schiuma);box-shadow:none;border:2px solid var(--bordo);font-weight:700}
+  .btn.sec:active{transform:none}
+  .btn.pericolo{color:var(--rosso);border-color:rgba(255,180,168,.5)}
+
+  /* Elenco dei pesci */
+  .lista{list-style:none;margin:26px 0 0;padding:0;display:grid;gap:12px}
+  .riga{background:var(--pannello);border:1px solid var(--bordo);border-radius:16px;position:relative}
+  .riga.top{border:2px solid var(--boa)}
+  .riga.flash{animation:flash 1.2s ease-out}
+  @keyframes flash{0%{background:rgba(244,184,28,.55)}100%{background:var(--pannello)}}
+  .riga-btn{
+    all:unset;box-sizing:border-box;cursor:pointer;width:100%;border-radius:16px;
+    display:grid;grid-template-columns:90px 1fr auto;gap:12px;align-items:center;padding:12px 14px;
+    -webkit-tap-highlight-color:transparent
+  }
+  .riga-btn:focus-visible{outline:3px solid var(--boa);outline-offset:2px}
+  .riga-btn:active{background:rgba(230,244,247,.06)}
+  .riga-btn > span{display:block}
+  svg.pesce{width:90px;height:36px;display:block;overflow:visible}
+  .info{min-width:0}
+  .info > span{display:block}
+  .nome{font-weight:800;font-size:20px;display:flex !important;align-items:center;gap:8px;flex-wrap:wrap}
+  .corona{font-size:13px;background:var(--boa);color:#2e2000;border-radius:20px;padding:2px 10px;font-weight:800}
+  .data{font-size:14px;color:var(--schiuma-2);margin-top:2px}
+  .barra{height:8px;background:rgba(230,244,247,.18);border-radius:8px;margin-top:8px;overflow:hidden}
+  .barra i{display:block;height:100%;background:linear-gradient(90deg,#3fa3c4,var(--boa));border-radius:8px;transition:width .6s}
+  .rec{text-align:right;white-space:nowrap;display:flex !important;align-items:center;gap:6px}
+  .rec .val{font-size:26px;font-weight:800;color:var(--boa);font-variant-numeric:tabular-nums}
+  .rec .val.vuoto{color:var(--schiuma-2);opacity:.6}
+  .rec small{font-size:15px;font-weight:700;color:var(--schiuma-2)}
+  .rec .freccia{font-size:26px;color:var(--schiuma-2);opacity:.7;margin-left:2px}
+  .riga.salta svg.pesce{animation:salto .9s ease-out}
+  @keyframes salto{0%{transform:none}35%{transform:translateY(-22px) rotate(-14deg)}70%{transform:translateY(-4px) rotate(6deg)}100%{transform:none}}
+
+  /* Backup e pulsanti finali */
+  .backup{margin-top:32px;background:var(--pannello);border:1px solid var(--bordo);border-radius:18px;padding:16px}
+  .backup h2{margin:0 0 4px;font-size:22px}
+  .backup p{margin:0 0 12px;color:var(--schiuma-2);font-size:15px}
+  .backup .ultimo{margin:12px 0 0;font-weight:700}
+  .backup .ultimo.attenzione{color:var(--boa)}
+  .riga-pulsanti{display:flex;gap:12px;flex-wrap:wrap}
+  .riga-pulsanti .btn{flex:1 1 200px}
+  .fine{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+  .fine .btn{flex:1 1 220px}
+
+  /* Scheda con lo storico di un pesce */
+  dialog.scheda{
+    border:0;padding:0;border-radius:22px;width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 40px);
+    background:var(--fondale);color:var(--schiuma);box-shadow:0 20px 60px rgba(0,0,0,.5);font-family:var(--font)
+  }
+  dialog.scheda[open]{display:flex;flex-direction:column}
+  dialog.scheda::backdrop{background:rgba(4,18,26,.72)}
+  .scheda-top{display:flex;align-items:center;gap:12px;padding:16px 16px 12px;border-bottom:1px solid var(--bordo)}
+  .scheda-top svg.pesce{width:110px;height:44px;flex-shrink:0}
+  .scheda-top h2{margin:0;font-size:24px;line-height:1.1}
+  .scheda-top p{margin:2px 0 0;color:var(--schiuma-2);font-size:15px}
+  .scheda-top p b{color:var(--boa);font-size:18px}
+  .chiudi{
+    margin-left:auto;flex-shrink:0;width:48px;height:48px;border-radius:12px;border:2px solid var(--bordo);
+    background:rgba(230,244,247,.1);color:var(--schiuma);font-size:26px;line-height:1;cursor:pointer
+  }
+  .scheda-corpo{padding:8px 16px 18px;overflow:auto;-webkit-overflow-scrolling:touch}
+  .storico{list-style:none;margin:0 0 16px;padding:0}
+  .storico li{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--bordo)}
+  .storico .quando{font-weight:700;font-size:16px}
+  .storico .nota{display:block;font-size:14px;color:var(--schiuma-2);font-weight:400;word-break:break-word}
+  .storico .kg{font-weight:800;font-size:22px;color:var(--boa);white-space:nowrap;text-align:right}
+  .storico .kg small{display:block;font-size:11px;font-weight:800;color:#2e2000;background:var(--boa);border-radius:20px;padding:1px 8px;text-align:center;margin-top:2px}
+  .storico .vuota{display:block;color:var(--schiuma-2);border:0;text-align:center;padding:20px 0}
+  .del{
+    background:rgba(255,180,168,.12);border:2px solid rgba(255,180,168,.5);color:var(--rosso);
+    font-size:22px;font-weight:800;line-height:1;cursor:pointer;width:44px;height:44px;border-radius:12px;touch-action:manipulation
+  }
+  .scheda-azioni{display:flex;flex-direction:column;gap:10px}
+
+  #toast{
+    position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,180px);
+    background:var(--sabbia);color:var(--testo);font-size:17px;font-family:var(--font);
+    font-weight:700;padding:14px 18px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);
+    transition:transform .3s;width:max-content;max-width:calc(100vw - 32px);text-align:center;z-index:30
+  }
+  #toast.on{transform:translate(-50%,0)}
+
+  #mare,#festa{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none}
+  #mare{z-index:0} #festa{z-index:20}
+
+  /* ---------- Telefono ---------- */
+  @media (max-width:560px){
+    .wrap{padding:16px 14px 48px}
+    header{flex-direction:column;align-items:flex-start;gap:6px}
+    .fucile{width:100%;max-width:300px}
+    .stats{grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+    .stat:last-child{grid-column:1 / -1}
+    .cattura{padding:16px 14px}
+    .cattura label,.cattura label.largo{flex:1 1 100%}
+    .cattura label.meta{flex:1 1 40%}
+    .cattura .btn{width:100%;font-size:20px}
+    .riga-btn{grid-template-columns:66px 1fr auto;gap:10px;padding:12px}
+    svg.pesce{width:66px;height:27px}
+    .nome{font-size:19px}
+    .rec .val{font-size:22px}
+    .rec .freccia{display:none}
+    dialog.scheda{width:100%;max-width:100%;margin:auto 0 0;border-radius:22px 22px 0 0;max-height:88vh;padding-bottom:env(safe-area-inset-bottom,0px)}
+    .scheda-top svg.pesce{width:84px;height:34px}
+  }
+  @media (prefers-contrast:more){
+    :root{--pannello:#0a2533;--bordo:#e6f4f7;--schiuma-2:#e6f4f7}
+    .cattura input,.cattura select{border-color:#10303f}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="mare" aria-hidden="true"></canvas>
+<canvas id="festa" aria-hidden="true"></canvas>
+<main class="wrap">
+
+  <!-- Questo avviso sparisce da solo quando l'app funziona. Se lo vedi, sei in un'anteprima. -->
+  <div class="avviso" id="avvisoAnteprima">
+    Stai vedendo solo un'anteprima: qui i pesci non si caricano. Apri il link in Safari (o Chrome) per usare l'app.
+  </div>
+
+  <header>
+    <h1>Record di pesca<br>di Samu</h1>
+    <svg class="fucile" id="fucile" viewBox="0 0 340 90" role="button" tabindex="0" aria-label="Fucile da pesca: premi per sparare">
+      <g id="asta">
+        <rect x="70" y="30" width="230" height="4" rx="2" fill="#cfd8dc"/>
+        <path d="M300 25 L328 32 L300 39 Z" fill="#eceff1"/>
+        <path d="M300 25 L308 32 L300 39 Z" fill="#9aa7ad"/>
+      </g>
+      <rect x="40" y="36" width="210" height="12" rx="6" fill="#1b4b5f" stroke="#d9eef2" stroke-opacity=".4"/>
+      <rect x="40" y="38" width="210" height="3" rx="1.5" fill="#2c7a96"/>
+      <path d="M44 36 L20 38 Q8 40 10 52 L30 74 Q34 80 42 76 L56 48 Z" fill="#0a2533" stroke="#d9eef2" stroke-opacity=".4"/>
+      <path d="M70 48 L84 48 L86 76 Q86 80 80 80 L74 80 Q70 80 70 76 Z" fill="#f4b81c"/>
+      <circle cx="102" cy="52" r="4" fill="none" stroke="#f4b81c" stroke-width="2"/>
+      <path d="M224 38 Q250 4 268 30" fill="none" stroke="#f4b81c" stroke-width="3" stroke-linecap="round"/>
+      <path d="M224 46 Q250 76 268 40" fill="none" stroke="#f4b81c" stroke-width="3" stroke-linecap="round"/>
+      <rect x="242" y="32" width="22" height="16" rx="4" fill="#0a2533" stroke="#d9eef2" stroke-opacity=".4"/>
+    </svg>
+  </header>
+
+  <section class="stats" aria-label="Riepilogo">
+    <div class="stat"><b><span id="sSpecie">0</span><small id="sSpecieTot">/6</small></b><span>specie con record</span></div>
+    <div class="stat"><b id="sCatture">0</b><span>catture in tutto</span></div>
+    <div class="stat"><b id="sTop">–</b><span>pesce più grosso</span></div>
+  </section>
+
+  <form class="cattura" id="formCattura" autocomplete="off" aria-labelledby="titoloCattura">
+    <h2 id="titoloCattura">Nuova cattura</h2>
+    <label>Pesce
+      <select id="selPesce"><option>Barracuda</option><option>Cefalo</option><option>Orata</option><option>Polpo</option><option>Sarago</option><option>Spigola</option></select>
+    </label>
+    <label id="lblAltro" hidden>Nome del pesce
+      <input id="inAltro" maxlength="24" placeholder="es. Murena" autocapitalize="words">
+    </label>
+    <label>Peso (kg)
+      <input id="inPeso" type="text" inputmode="decimal" placeholder="es. 3,2" required>
+    </label>
+    <label class="largo">Dove / note <em>(facoltativo)</em>
+      <input id="inNota" maxlength="80" placeholder="es. Secca di Capo Rosso, 12 m">
+    </label>
+    <button class="btn" type="submit">Spara!</button>
+  </form>
+
+  <h2 class="sr-only">I miei pesci. Tocca un pesce per vedere tutte le catture.</h2>
+  <ul class="lista" id="lista"></ul>
+
+  <section class="backup" aria-labelledby="titoloBackup">
+    <h2 id="titoloBackup">Backup</h2>
+    <div class="riga-pulsanti">
+      <button class="btn" id="btnEsporta" type="button">Esporta backup</button>
+      <button class="btn sec" id="btnImporta" type="button">Importa backup</button>
+    </div>
+    <input type="file" id="fileImport" accept=".json,application/json" hidden>
+    <p class="ultimo" id="ultimoBackup" aria-live="polite"></p>
+  </section>
+
+  <div class="fine">
+    <button class="btn" id="btnCondividi" type="button">Condividi i miei record</button>
+    <button class="btn sec pericolo" id="btnReset" type="button">Azzera tutto</button>
+  </div>
+</main>
+
+<dialog class="scheda" id="scheda" aria-labelledby="schedaNome">
+  <div class="scheda-top">
+    <div id="schedaPesce"></div>
+    <div>
+      <h2 id="schedaNome"></h2>
+      <p id="schedaRec"></p>
+    </div>
+    <button class="chiudi" type="button" id="schedaChiudi" aria-label="Chiudi">×</button>
+  </div>
+  <div class="scheda-corpo">
+    <h3 class="sr-only">Tutte le catture</h3>
+    <ul class="storico" id="schedaLista"></ul>
+    <div class="scheda-azioni">
+      <button class="btn" type="button" id="schedaAggiungi">Aggiungi una cattura</button>
+      <button class="btn sec pericolo" type="button" id="schedaElimina" hidden>Elimina questo pesce</button>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  // Se il codice parte, l'avviso dell'anteprima non serve
+  const avviso = document.getElementById('avvisoAnteprima'); if(avviso) avviso.remove();
+
+  const KEY = 'recordPesca.v3', KEY_VECCHIA = 'recordPesca.v2';
+  const ridotto = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  // Specie iniziali: nome, colore corpo, colore secondario, forma del disegno
+  const SPECIE = [
+    ['Spigola',   '#c9d3d9', '#5f7784', 'spigola'],
+    ['Orata',     '#c4ccd1', '#e4b83a', 'orata'],
+    ['Sarago',    '#d3dade', '#1f2a30', 'sarago'],
+    ['Cefalo',    '#c3ced5', '#6c808c', 'cefalo'],
+    ['Barracuda', '#b9c4ca', '#3e4d56', 'barracuda'],
+    ['Polpo',     '#c08aac', '#7d4f6e', 'polpo'],
+  ];
+  const COLORI_EXTRA = [['#8fb8a0','#4d7d66'],['#c9a0d0','#7b4c88'],['#e0b080','#a0693a'],['#8ab0e0','#3f6fa8']];
+  const DISEGNI = ['strisce','macchie','dorso','fronte'];
+  const COLORE = /^#[0-9a-f]{3,8}$/i;
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt = n => (Math.round(n*100)/100).toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:2});
+  const numero = v => parseFloat(String(v).trim().replace(',','.'));
+  const oggiISO = () => { const d = new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+  const dataLunga = iso => new Date(iso).toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'});
+  const nuovoId = pre => pre + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+  // ---------- Dati ----------
+  // stato = { pesci:[{id,nome,c1,c2,forma,disegno,custom}], catture:[{id,pesce,peso,data,nota}], ultimoBackup }
+  function nuovoStato(){ return normalizza({pesci:[],catture:[],ultimoBackup:null}); }
+
+  // Controlla e ripulisce i dati (serve anche per i backup importati)
+  function normalizza(s){
+    const out = {pesci:[], catture:[], ultimoBackup: typeof s.ultimoBackup==='string' ? s.ultimoBackup : null};
+    const nomi = new Set(), ids = new Set();
+    const conCatture = new Set((Array.isArray(s.catture) ? s.catture : []).map(c=>c && c.pesce));
+    (Array.isArray(s.pesci) ? s.pesci : []).forEach(p=>{
+      if(!p || typeof p.nome!=='string' || !p.nome.trim()) return;
+      const nome = p.nome.trim().slice(0,24), k = nome.toLowerCase();
+      if(nomi.has(k)) return;
+      let id = typeof p.id==='string' && p.id ? p.id.slice(0,40) : nuovoId('u');
+      if(ids.has(id)) id = nuovoId('u');
+      const base = SPECIE.find(sp=>sp[0].toLowerCase()===k);
+      if(!base && p.custom!==true && !conCatture.has(p.id)) return;
+      nomi.add(k); ids.add(id);
+      if(base) out.pesci.push({id, nome:base[0], c1:base[1], c2:base[2], forma:base[3], custom:false});
+      else out.pesci.push({id, nome,
+        c1: COLORE.test(p.c1)?p.c1:'#8fb8a0', c2: COLORE.test(p.c2)?p.c2:'#4d7d66',
+        forma:'generica', disegno: DISEGNI.includes(p.disegno)?p.disegno:'strisce', custom:true});
+    });
+    SPECIE.forEach(([nome,c1,c2,forma],i)=>{
+      if(nomi.has(nome.toLowerCase())) return;
+      let id = 's'+i; if(ids.has(id)) id = nuovoId('s');
+      ids.add(id); out.pesci.push({id, nome, c1, c2, forma, custom:false});
+    });
+    (Array.isArray(s.catture) ? s.catture : []).forEach(c=>{
+      if(!c || !ids.has(c.pesce)) return;
+      const peso = Number(c.peso); if(!(peso>0 && peso<1000)) return;
+      const d = new Date(c.data); if(isNaN(d)) return;
+      out.catture.push({
+        id: typeof c.id==='string' && c.id ? c.id.slice(0,40) : nuovoId('c'),
+        pesce: c.pesce, peso: Math.round(peso*100)/100, data: d.toISOString(),
+        nota: typeof c.nota==='string' ? c.nota.slice(0,80) : ''
+      });
+    });
+    return out;
+  }
+  // Dati della versione precedente (solo i record) -> ogni record diventa una cattura
+  function daVecchiaVersione(v){
+    const catture = v.pesci.filter(p=>p && p.peso>0).map(p=>({id:nuovoId('c'), pesce:p.id, peso:p.peso, data:p.data||new Date().toISOString(), nota:''}));
+    return normalizza({pesci:v.pesci, catture, ultimoBackup:null});
+  }
+  function carica(){
+    try{ const x = JSON.parse(localStorage.getItem(KEY)); if(x && Array.isArray(x.pesci)) return normalizza(x); }catch(e){}
+    try{ const v = JSON.parse(localStorage.getItem(KEY_VECCHIA)); if(v && Array.isArray(v.pesci)) return daVecchiaVersione(v); }catch(e){}
+    return nuovoStato();
+  }
+  let stato = carica();
+  function salva(){ try{ localStorage.setItem(KEY, JSON.stringify(stato)); }catch(e){} }
+  salva();
+
+  function recordDi(id){
+    let best = null;
+    for(const c of stato.catture) if(c.pesce===id && (!best || c.peso>best.peso || (c.peso===best.peso && c.data<best.data))) best = c;
+    return best;
+  }
+  const cattureDi = id => stato.catture.filter(c=>c.pesce===id).sort((a,b)=>b.data.localeCompare(a.data));
+
+  // ---------- Disegni dei pesci (testa a destra, coda a sinistra) ----------
+  const occhio = (x,y,r=2.6) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff"/><circle cx="${x+r*.25}" cy="${y}" r="${r*.55}" fill="#10303f"/>`;
+  const branchia = (x,y1,y2) => `<path d="M${x} ${y1} Q${x+4} ${(y1+y2)/2} ${x} ${y2}" fill="none" stroke="#000" stroke-opacity=".2" stroke-width="1.4"/>`;
+  const bocca = (x1,y1,x2,y2,col='#10303f') => `<path d="M${x1} ${y1} L${x2} ${y2}" stroke="${col}" stroke-opacity=".6" stroke-width="1.3" stroke-linecap="round"/>`;
+  const CODA = {
+    forcuta:'M19 20 L3 7 L9 20 L3 33 Z',
+    tonda:'M22 13 Q3 9 3 20 Q3 31 22 27 Z',
+    dritta:'M19 20 L4 9 Q7 20 4 31 Z'
+  };
+  const FORME = {
+    // Spigola: slanciata, dorso scuro, due pinne dorsali
+    spigola: p=>({
+      body:'M15 20 C26 9 64 7 86 13 Q95 16 97 20 Q95 23 88 25 C66 32 27 31 15 20Z',
+      dietro:`<path d="${CODA.forcuta}" fill="${p.c2}"/><path d="M38 11 L44 2 L51 10Z" fill="${p.c2}"/><path d="M55 10 L60 5 L69 11Z" fill="${p.c2}"/><path d="M52 29 L58 35 L64 29Z" fill="${p.c2}"/>`,
+      deco:`<rect x="0" y="0" width="100" height="16" fill="${p.c2}" opacity=".55"/>`,
+      sopra:`${branchia(76,12,28)}${occhio(87,17)}${bocca(97,20,91,21.5)}`
+    }),
+    // Orata: alta e ovale, banda dorata tra gli occhi, macchia scura sulla branchia
+    orata: p=>({
+      body:'M18 20 C24 5 62 2 82 9 Q93 14 95 21 Q90 30 70 35 C46 39 26 32 18 20Z',
+      dietro:`<path d="${CODA.forcuta}" fill="#9aa5ab"/><path d="M36 7 Q56 -2 76 7Z" fill="#8b979d"/><path d="M50 34 L58 39 L64 34Z" fill="#8b979d"/>`,
+      deco:`<path d="M0 0 L100 0 L100 12 Q50 8 0 16Z" fill="#7e8a90" opacity=".35"/><path d="M80 0 L86 0 L90 40 L84 40Z" fill="${p.c2}" opacity=".9"/>`,
+      sopra:`<ellipse cx="74" cy="15" rx="2.2" ry="3.4" fill="#2f3d45"/>${occhio(86,15,2.8)}${bocca(95,21,89,22)}`
+    }),
+    // Sarago: bande nere verticali e macchia nera sulla coda
+    sarago: p=>({
+      body:'M18 20 C24 7 60 4 80 10 Q92 14 95 20 Q91 28 76 32 C52 37 28 31 18 20Z',
+      dietro:`<path d="${CODA.forcuta}" fill="#9aa5ab"/><path d="M36 8 Q56 0 76 8Z" fill="#8b979d"/><path d="M50 33 L57 38 L63 33Z" fill="#8b979d"/>`,
+      deco:[38,49,60,71].map(x=>`<rect x="${x}" y="0" width="3.4" height="40" fill="${p.c2}" opacity=".8"/>`).join('')+`<circle cx="25" cy="20" r="3.4" fill="${p.c2}"/>`,
+      sopra:`${occhio(86,16,2.7)}${bocca(95,20,89,21)}`
+    }),
+    // Cefalo: a siluro, testa larga, righe orizzontali
+    cefalo: p=>({
+      body:'M14 20 C24 10 66 9 88 13 Q96 16 96 20 Q96 24 88 26 C66 31 24 30 14 20Z',
+      dietro:`<path d="${CODA.forcuta}" fill="${p.c2}"/><path d="M42 11 L46 5 L51 11Z" fill="${p.c2}"/><path d="M60 11 L63 7 L68 11Z" fill="${p.c2}"/>`,
+      deco:`<rect x="0" y="0" width="100" height="15" fill="${p.c2}" opacity=".5"/>`+[14,18,22].map(y=>`<path d="M16 ${y} L90 ${y}" stroke="${p.c2}" stroke-width="1" opacity=".6"/>`).join(''),
+      sopra:`${occhio(88,17,2.4)}`
+    }),
+    // Barracuda: lunghissimo, muso a punta, barre scure
+    barracuda: p=>({
+      body:'M12 20 C22 14 66 13 86 15 L99 19 L86 24 C66 27 22 26 12 20Z',
+      dietro:`<path d="M15 20 L2 10 L6 20 L2 30Z" fill="${p.c2}"/><path d="M40 15 L44 9 L48 15Z" fill="${p.c2}"/><path d="M60 15 L63 10 L67 15Z" fill="${p.c2}"/><path d="M58 25 L61 30 L65 25Z" fill="${p.c2}"/>`,
+      deco:`<rect x="0" y="0" width="100" height="18" fill="${p.c2}" opacity=".4"/>`+[22,30,38,46,54,62,70].map(x=>`<path d="M${x} 14 L${x+3} 19.5" stroke="${p.c2}" stroke-width="2" opacity=".8"/>`).join(''),
+      sopra:`${occhio(85,18,2.2)}${bocca(99,19,88,21)}`
+    }),
+    // Pesci aggiunti da Samu: forma base con il disegno scelto
+    generica: p=>{
+      let deco = '';
+      if(p.disegno==='strisce') deco = [36,46,56,66].map(x=>`<rect x="${x}" y="0" width="3" height="40" fill="${p.c2}" opacity=".75"/>`).join('');
+      if(p.disegno==='macchie') deco = [[32,15],[40,22],[50,13],[58,23],[66,15],[44,28]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="2.4" fill="${p.c2}" opacity=".8"/>`).join('');
+      if(p.disegno==='dorso')   deco = `<rect x="0" y="0" width="100" height="15" fill="${p.c2}" opacity=".65"/>`;
+      if(p.disegno==='fronte')  deco = `<rect x="76" y="0" width="12" height="40" fill="${p.c2}" opacity=".8"/>`;
+      return {
+        body:'M17 20 C24 7 60 4 80 10 Q92 14 95 20 Q91 27 78 31 C54 36 26 32 17 20Z',
+        dietro:`<path d="${CODA.forcuta}" fill="${p.c2}"/><path d="M36 8 Q56 0 76 8Z" fill="${p.c2}"/><path d="M50 32 L57 37 L63 32Z" fill="${p.c2}"/>`,
+        deco, sopra:`${branchia(76,11,29)}${occhio(86,16,2.6)}${bocca(95,20,89,21)}`
+      };
+    }
+  };
+  function polpoSVG(p, cls){
+    const tent = [0,1,2,3,4].map(i=>{
+      const y0 = 14+(i-2)*2.4, y1 = 6+i*7;
+      return `<path d="M50 ${y0} Q36 ${y1-2} 24 ${y1+(i%2?3:-2)} T4 ${y1+2}" fill="none" stroke="${p.c1}" stroke-width="4.4" stroke-linecap="round"/>`;
+    }).join('');
+    return `<svg class="${cls}" viewBox="0 0 100 40" aria-hidden="true" focusable="false">${tent}
+      <ellipse cx="66" cy="17" rx="20" ry="14" fill="${p.c1}"/>
+      <ellipse cx="61" cy="10" rx="9" ry="3.5" fill="#fff" opacity=".25"/>
+      ${[[56,22],[64,25],[72,22]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1.4" fill="${p.c2}"/>`).join('')}
+      ${occhio(74,12,3.2)}${occhio(74,22,3.2)}
+    </svg>`;
+  }
+  let nClip = 0;
+  function pesceSVG(p, cls){
+    cls = cls || 'pesce';
+    if(p.forma==='polpo') return polpoSVG(p, cls);
+    const f = (FORME[p.forma] || FORME.generica)(p), id = 'cp'+(nClip++);
+    return `<svg class="${cls}" viewBox="0 0 100 40" aria-hidden="true" focusable="false">
+      <defs><clipPath id="${id}"><path d="${f.body}"/></clipPath></defs>
+      ${f.dietro}<path d="${f.body}" fill="${p.c1}"/>
+      <g clip-path="url(#${id})">${f.deco}<path d="M0 26 Q50 38 100 24 L100 40 L0 40Z" fill="#fff" opacity=".22"/></g>
+      ${f.sopra}</svg>`;
+  }
+
+  // ---------- Numeri che salgono ----------
+  function anima(el, da, a, formato){
+    if(!el) return;
+    const id = (el._anim = (el._anim||0)+1);
+    if(ridotto || da===a){ el.textContent = formato(a); return; }
+    const t0 = performance.now(), dur = 1000;
+    (function passo(t){
+      if(el._anim!==id) return;
+      const k = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-k,3);
+      el.textContent = formato(da+(a-da)*e);
+      if(k<1) requestAnimationFrame(passo);
+    })(t0);
+  }
+  const intero = n => String(Math.round(n));
+  const numeri = {specie:0, catture:0};
+
+  // ---------- Interfaccia ----------
+  function render(flashId, scegli){
+    const rec = new Map(stato.pesci.map(p=>[p.id, recordDi(p.id)]));
+    const conRec = stato.pesci.filter(p=>rec.get(p.id));
+    const top = conRec.reduce((a,b)=>!a || rec.get(b.id).peso>rec.get(a.id).peso ? b : a, null);
+    const max = top ? rec.get(top.id).peso : 0;
+
+    anima($('sSpecie'), numeri.specie, conRec.length, intero); numeri.specie = conRec.length;
+    $('sSpecieTot').textContent = '/'+stato.pesci.length;
+    anima($('sCatture'), numeri.catture, stato.catture.length, intero); numeri.catture = stato.catture.length;
+    $('sTop').innerHTML = top ? esc(top.nome)+' <small>'+fmt(rec.get(top.id).peso)+' kg</small>' : '–';
+
+    // elenco a tendina
+    const sel = $('selPesce'), prev = scegli || sel.value;
+    sel.innerHTML = stato.pesci.map(p=>`<option value="${esc(p.id)}">${esc(p.nome)}</option>`).join('') + '<option value="__altro">Altro…</option>';
+    if([...sel.options].some(o=>o.value===prev)) sel.value = prev;
+    $('lblAltro').hidden = sel.value !== '__altro';
+
+    // elenco dei pesci: prima chi ha il record più grosso
+    const ordinati = [...stato.pesci].sort((a,b)=>((rec.get(b.id)||{}).peso||0)-((rec.get(a.id)||{}).peso||0) || a.nome.localeCompare(b.nome,'it'));
+    $('lista').innerHTML = ordinati.map(p=>{
+      const r = rec.get(p.id), n = stato.catture.filter(c=>c.pesce===p.id).length, isTop = top && p.id===top.id;
+      const txtN = n ? ' · '+n+(n===1?' cattura':' catture') : '';
+      const label = `${p.nome}: ${r ? 'record '+fmt(r.peso)+' chili' : 'nessun record'}${txtN}. Apri lo storico`;
+      return `<li class="riga${isTop?' top':''}${p.id===flashId?' flash':''}" data-id="${esc(p.id)}">
+        <button type="button" class="riga-btn" aria-label="${esc(label)}">
+          ${pesceSVG(p)}
+          <span class="info">
+            <span class="nome">${esc(p.nome)} ${isTop?'<span class="corona">il più grosso</span>':''}</span>
+            <span class="data">${r ? 'Record del '+dataLunga(r.data) : 'Ancora nessun record'}${txtN}</span>
+            <span class="barra"><i style="width:${max && r ? r.peso/max*100 : 0}%"></i></span>
+          </span>
+          <span class="rec">
+            <span class="val${r?'':' vuoto'}">${r ? fmt(r.peso) : '–'}</span>${r?'<small>kg</small>':''}<span class="freccia">›</span>
+          </span>
+        </button>
+      </li>`;
+    }).join('');
+
+    // stato del backup
+    const ub = $('ultimoBackup'), n = stato.catture.length;
+    ub.textContent = stato.ultimoBackup ? 'Ultimo backup: '+dataLunga(stato.ultimoBackup)
+      : (n ? 'Non hai ancora fatto nessun backup' : 'Ancora nessuna cattura da salvare');
+    ub.classList.toggle('attenzione', !stato.ultimoBackup && n>0);
+  }
+
+  let toastT;
+  function toast(msg){
+    const t = $('toast'), d = $('scheda');
+    const casa = d.open ? d : document.body;   // dentro la scheda aperta, altrimenti resterebbe coperto
+    if(t.parentNode!==casa) casa.appendChild(t);
+    t.textContent = msg; t.classList.add('on');
+    clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('on'), 4000);
+  }
+
+  // ---------- Fucile ----------
+  function spara(){
+    const asta = $('asta');
+    if(navigator.vibrate) navigator.vibrate(30);
+    if(!asta.animate || ridotto) return;
+    asta.animate([
+      {transform:'translateX(0)',opacity:1},
+      {transform:'translateX(-40px)',opacity:1,offset:.15},
+      {transform:'translateX(120px)',opacity:0,offset:.55},
+      {transform:'translateX(120px)',opacity:0,offset:.8},
+      {transform:'translateX(0)',opacity:1}
+    ],{duration:1100,easing:'ease-out'});
+  }
+  $('fucile').addEventListener('click', spara);
+  $('fucile').addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); spara(); }});
+
+  // ---------- Nuova cattura ----------
+  $('selPesce').addEventListener('change', e=>{
+    $('lblAltro').hidden = e.target.value !== '__altro';
+    if(e.target.value==='__altro') $('inAltro').focus();
+  });
+
+  $('formCattura').addEventListener('submit', e=>{
+    e.preventDefault();
+    const kg = numero($('inPeso').value);
+    if(!(kg>0 && kg<1000)){ toast('Inserisci un peso valido, es. 3,2'); $('inPeso').focus(); return; }
+    const giorno = oggiISO();
+
+    let p;
+    if($('selPesce').value==='__altro'){
+      const nome = $('inAltro').value.trim().slice(0,24);
+      if(!nome){ toast('Scrivi il nome del pesce'); $('inAltro').focus(); return; }
+      p = stato.pesci.find(x=>x.nome.toLowerCase()===nome.toLowerCase());
+      if(!p){
+        const [c1,c2] = COLORI_EXTRA[stato.pesci.length % COLORI_EXTRA.length];
+        p = {id:nuovoId('u'), nome, c1, c2, forma:'generica', disegno:DISEGNI[stato.pesci.length % 4], custom:true};
+        stato.pesci.push(p);
+      }
+      $('inAltro').value = '';
+    } else p = stato.pesci.find(x=>x.id===$('selPesce').value);
+    if(!p) return;
+
+    const prima = recordDi(p.id), vecchio = prima ? prima.peso : 0, peso = Math.round(kg*100)/100;
+    stato.catture.push({id:nuovoId('c'), pesce:p.id, peso, data:new Date(giorno+'T12:00:00').toISOString(), nota:$('inNota').value.trim().slice(0,80)});
+    salva(); spara();
+
+    const record = peso > vecchio;
+    render(record ? p.id : null, p.id);
+    if(record){
+      toast(vecchio>0 ? `Nuovo record per ${p.nome}: ${fmt(peso)} kg (prima ${fmt(vecchio)} kg)` : `Primo record per ${p.nome}: ${fmt(peso)} kg`);
+      festeggia(p.id, vecchio, peso);
+    } else {
+      toast(`Salvata nello storico. ${fmt(peso)} kg non batte il record di ${fmt(vecchio)} kg`);
+    }
+    $('inPeso').value = ''; $('inNota').value = '';
+    $('inPeso').blur();
+  });
+
+  // ---------- Scheda con lo storico ----------
+  const scheda = $('scheda');
+  let schedaId = null;
+  function apriScheda(id){
+    const p = stato.pesci.find(x=>x.id===id); if(!p) return;
+    schedaId = id;
+    const r = recordDi(id), lista = cattureDi(id);
+    $('schedaPesce').innerHTML = pesceSVG(p);
+    $('schedaNome').textContent = p.nome;
+    $('schedaRec').innerHTML = r ? `Record <b>${fmt(r.peso)} kg</b> · ${lista.length} ${lista.length===1?'cattura':'catture'}` : 'Ancora nessuna cattura';
+    $('schedaLista').innerHTML = lista.length ? lista.map(c=>`
+      <li data-c="${esc(c.id)}">
+        <span class="quando">${dataLunga(c.data)}${c.nota ? `<span class="nota">${esc(c.nota)}</span>` : ''}</span>
+        <span class="kg">${fmt(c.peso)} kg${r && c.id===r.id ? '<small>record</small>' : ''}</span>
+        <button class="del" type="button" aria-label="Elimina la cattura del ${dataLunga(c.data)}, ${fmt(c.peso)} chili">×</button>
+      </li>`).join('') : '<li class="vuota">Nessuna cattura per ora. Aggiungine una!</li>';
+    $('schedaElimina').hidden = !p.custom;
+    if(!scheda.open){
+      if(typeof scheda.showModal==='function') scheda.showModal(); else scheda.setAttribute('open','');
+    }
+  }
+  function chiudiScheda(){
+    if(typeof scheda.close==='function') scheda.close(); else scheda.removeAttribute('open');
+  }
+  scheda.addEventListener('close', ()=>{
+    const t = $('toast'); if(t.parentNode!==document.body) document.body.appendChild(t);
+    const riga = document.querySelector('.riga[data-id="'+(window.CSS&&CSS.escape?CSS.escape(schedaId||''):schedaId)+'"] .riga-btn');
+    if(riga) riga.focus({preventScroll:true});
+  });
+  $('lista').addEventListener('click', e=>{
+    const li = e.target.closest('.riga'); if(li) apriScheda(li.dataset.id);
+  });
+  $('schedaChiudi').addEventListener('click', chiudiScheda);
+  scheda.addEventListener('click', e=>{ if(e.target===scheda) chiudiScheda(); });   // tocco fuori dalla scheda
+
+  $('schedaLista').addEventListener('click', e=>{
+    const b = e.target.closest('.del'); if(!b) return;
+    const cid = b.closest('li').dataset.c, c = stato.catture.find(x=>x.id===cid); if(!c) return;
+    if(!confirm(`Eliminare la cattura del ${dataLunga(c.data)} (${fmt(c.peso)} kg)?`)) return;
+    stato.catture = stato.catture.filter(x=>x!==c);
+    salva(); render(); apriScheda(schedaId);
+    toast('Cattura eliminata');
+  });
+  $('schedaAggiungi').addEventListener('click', ()=>{
+    const id = schedaId; chiudiScheda();
+    $('selPesce').value = id; $('lblAltro').hidden = true;
+    $('formCattura').scrollIntoView({behavior: ridotto?'auto':'smooth', block:'start'});
+    setTimeout(()=>$('inPeso').focus(), ridotto?0:350);
+  });
+  $('schedaElimina').addEventListener('click', ()=>{
+    const p = stato.pesci.find(x=>x.id===schedaId); if(!p || !p.custom) return;
+    const n = stato.catture.filter(c=>c.pesce===p.id).length;
+    if(!confirm(`Eliminare "${p.nome}"${n ? ' e le sue '+n+' catture' : ''}?`)) return;
+    stato.pesci = stato.pesci.filter(x=>x!==p);
+    stato.catture = stato.catture.filter(c=>c.pesce!==p.id);
+    salva(); chiudiScheda(); render();
+    toast(p.nome+' eliminato');
+  });
+
+  // ---------- Azzera ----------
+  $('btnReset').onclick = ()=>{
+    if(!confirm('Vuoi davvero cancellare tutte le catture e i record?')) return;
+    if(stato.catture.length && !stato.ultimoBackup && !confirm('Non hai nessun backup: dopo non potrai recuperarli. Continuare?')) return;
+    const ub = stato.ultimoBackup;
+    stato = nuovoStato(); stato.ultimoBackup = ub; salva(); render();
+    toast('Tutto azzerato');
+  };
+
+  // ---------- Backup ----------
+  function scarica(blob, nome){
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = nome;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
+  }
+  $('btnEsporta').onclick = async ()=>{
+    const dati = {app:'record-pesca-samu', versione:3, esportato:new Date().toISOString(), pesci:stato.pesci, catture:stato.catture};
+    const nome = 'backup-pesca-samu-'+oggiISO()+'.json';
+    const blob = new Blob([JSON.stringify(dati,null,2)], {type:'application/json'});
+    let fatto = false;
+    try{
+      const file = new File([blob], nome, {type:'application/json'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:'Backup record di pesca'}); fatto = true;
+      }
+    }catch(e){ if(e && e.name==='AbortError') return; }
+    if(!fatto) scarica(blob, nome);
+    stato.ultimoBackup = new Date().toISOString(); salva(); render();
+    toast('Backup pronto: '+nome);
+  };
+  $('btnImporta').onclick = ()=> $('fileImport').click();
+  $('fileImport').addEventListener('change', async e=>{
+    const f = e.target.files && e.target.files[0]; e.target.value = '';
+    if(!f) return;
+    try{
+      const x = JSON.parse(await f.text());
+      let nuovo;
+      if(x && Array.isArray(x.pesci) && Array.isArray(x.catture)) nuovo = normalizza({pesci:x.pesci, catture:x.catture, ultimoBackup:x.esportato||null});
+      else if(x && Array.isArray(x.pesci)) nuovo = daVecchiaVersione(x);
+      else throw new Error('formato');
+      const msg = `Il backup contiene ${nuovo.catture.length} ${nuovo.catture.length===1?'cattura':'catture'}.\nSostituire i dati di questo telefono?`;
+      if(!confirm(msg)) return;
+      stato = nuovo; salva(); render();
+      toast('Backup caricato');
+    }catch(err){
+      toast('Questo file non è un backup valido');
+    }
+  });
+
+  // ---------- Fondale animato e festa ----------
+  const mare = $('mare'), cm = mare.getContext('2d'), festa = $('festa'), cf = festa.getContext('2d');
+  let W=0, H=0, bolle=[], pesciolini=[], particelle=[];
+  const piccolo = ()=> W < 600;
+  const maxPesciolini = ()=> piccolo() ? 5 : 6;
+  function ridimensiona(){
+    const r = Math.min(devicePixelRatio||1, 2); W = innerWidth; H = innerHeight;
+    [mare,festa].forEach(c=>{ c.width = W*r; c.height = H*r; });
+    cm.setTransform(r,0,0,r,0,0); cf.setTransform(r,0,0,r,0,0);
+    if(ridotto) disegnaFondale();
+  }
+  const nuovaBolla = init => ({x:Math.random()*W, y:init?Math.random()*H:H+10, r:2+Math.random()*6, v:.2+Math.random()*.5, o:Math.random()*6.28});
+  const nuovoPesciolino = init =>{
+    const d = Math.random()<.5?1:-1;
+    return {
+      x: init ? Math.random()*W : (d>0?-60:W+60),
+      y: H*.1+Math.random()*H*.8,
+      v: d*(piccolo() ? .5+Math.random()*.5 : .3+Math.random()*.4),
+      s: (piccolo() ? .8 : .6) + Math.random()*.6, d, onda:Math.random()*6.28
+    };
+  };
+  function disegnaPesciolino(f){
+    const yy = f.y + Math.sin(f.onda)*4;
+    cm.save(); cm.translate(f.x,yy); cm.scale(f.d*f.s,f.s); cm.fillStyle='rgba(217,238,242,.32)';
+    cm.beginPath(); cm.ellipse(0,0,22,10,0,0,6.28); cm.fill();
+    cm.beginPath(); cm.moveTo(-18,0); cm.lineTo(-34,-10); cm.lineTo(-34,10); cm.closePath(); cm.fill();
+    cm.fillStyle='rgba(10,37,51,.6)'; cm.beginPath(); cm.arc(12,-2,2.2,0,6.28); cm.fill();
+    cm.restore();
+  }
+  function disegnaBolla(b){
+    cm.strokeStyle='rgba(217,238,242,.22)'; cm.lineWidth=1.2; cm.beginPath(); cm.arc(b.x+Math.sin(b.o)*8,b.y,b.r,0,6.28); cm.stroke();
+  }
+  function disegnaFondale(){
+    cm.clearRect(0,0,W,H);
+    bolle.forEach(disegnaBolla);
+    pesciolini.forEach(disegnaPesciolino);
+  }
+  ridimensiona();
+  addEventListener('resize', ridimensiona);
+  for(let i=0;i<22;i++) bolle.push(nuovaBolla(true));
+  for(let i=0;i<3;i++) pesciolini.push(nuovoPesciolino(true));
+  function ciclo(){
+    cm.clearRect(0,0,W,H);
+    bolle.forEach((b,i)=>{
+      b.y -= b.v; b.o += .02; if(b.y < -10) bolle[i] = nuovaBolla(false);
+      disegnaBolla(b);
+    });
+    if(pesciolini.length < maxPesciolini() && Math.random() < .012) pesciolini.push(nuovoPesciolino(false));
+    pesciolini = pesciolini.filter(f=>{ f.x += f.v; f.onda += .05; disegnaPesciolino(f); return f.x>-80 && f.x<W+80; });
+    cf.clearRect(0,0,W,H);
+    particelle = particelle.filter(q=>{
+      q.x += q.vx; q.y += q.vy; q.vy += q.g; q.vita--;
+      if(q.bolla){ cf.strokeStyle='rgba(255,255,255,.85)'; cf.lineWidth=1.5; cf.beginPath(); cf.arc(q.x,q.y,q.r,0,6.28); cf.stroke(); }
+      else { cf.save(); cf.translate(q.x,q.y); cf.rotate(q.vita*.2); cf.fillStyle=q.c; cf.fillRect(-3,-2,6,4); cf.restore(); }
+      return q.vita>0 && q.y<H+20;
+    });
+    requestAnimationFrame(ciclo);
+  }
+  if(ridotto) disegnaFondale(); else ciclo();
+
+  // Record battuto: la riga si porta in vista, il numero sale, il pesce salta e partono coriandoli
+  function festeggia(id, vecchio, nuovo){
+    const riga = [...document.querySelectorAll('.riga')].find(r=>r.dataset.id===id); if(!riga) return;
+    const r0 = riga.getBoundingClientRect();
+    if(r0.top < 0 || r0.bottom > innerHeight) riga.scrollIntoView({block:'center', behavior: ridotto ? 'auto' : 'smooth'});
+    const val = riga.querySelector('.val');
+    setTimeout(()=>anima(val, vecchio, nuovo, fmt), ridotto ? 0 : 250);
+    riga.classList.add('salta'); setTimeout(()=>riga.classList.remove('salta'), 1000);
+    if(navigator.vibrate) navigator.vibrate([40,40,80]);
+    if(ridotto) return;
+    setTimeout(()=>{
+      const r = riga.getBoundingClientRect(), x = r.left+50, y = r.top+r.height/2;
+      const col = ['#f4b81c','#d9eef2','#1d6a86','#ff9b8a','#8fd6c2'];
+      for(let i=0;i<50;i++){
+        const a = Math.random()*6.28, v = 2+Math.random()*5, bolla = i%3===0;
+        particelle.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-3,g:bolla?-.02:.15,vita:70+Math.random()*40,bolla,r:3+Math.random()*5,c:col[i%col.length]});
+      }
+    }, 350);
+  }
+
+  // ---------- Condividi: crea un'immagine con i record ----------
+  function immagine(){
+    const righe = stato.pesci.map(p=>({p, r:recordDi(p.id)})).filter(x=>x.r).sort((a,b)=>b.r.peso-a.r.peso);
+    const w = 1080, h = Math.max(900, 440+righe.length*96+110);
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
+    const g = x.createLinearGradient(0,0,0,h); g.addColorStop(0,'#1d6a86'); g.addColorStop(.35,'#103a4e'); g.addColorStop(1,'#0a2533');
+    x.fillStyle = g; x.fillRect(0,0,w,h);
+    const F = '"Bricolage Grotesque","Segoe UI",Arial,sans-serif';
+    x.fillStyle = '#d9eef2'; x.font = '800 76px '+F; x.fillText('Record di pesca',70,150);
+    x.fillStyle = '#f4b81c'; x.fillText('di Samu',70,238);
+    x.fillStyle = '#d9eef2'; x.font = '600 34px '+F;
+    x.fillText(righe.length ? righe.length+' specie, '+stato.catture.length+' catture in tutto' : 'Ancora nessun record',70,310);
+    const medaglie = ['#f4b81c','#cfd8dc','#cd8a4b'];
+    righe.forEach(({p,r},i)=>{
+      const y = 370+i*96;
+      x.fillStyle = 'rgba(10,37,51,.65)'; x.beginPath();
+      if(x.roundRect) x.roundRect(70,y,w-140,80,20); else x.rect(70,y,w-140,80); x.fill();
+      x.fillStyle = medaglie[i] || 'rgba(217,238,242,.25)'; x.beginPath(); x.arc(120,y+40,24,0,6.28); x.fill();
+      x.fillStyle = '#10303f'; x.font = '800 28px '+F; x.textAlign = 'center'; x.fillText(String(i+1),120,y+50);
+      x.textAlign = 'left'; x.fillStyle = '#d9eef2'; x.font = '800 38px '+F; x.fillText(p.nome,170,y+53);
+      x.textAlign = 'right'; x.fillStyle = '#f4b81c'; x.font = '800 42px '+F; x.fillText(fmt(r.peso)+' kg',w-100,y+54);
+      x.textAlign = 'left';
+    });
+    x.fillStyle = 'rgba(217,238,242,.6)'; x.font = '500 26px '+F;
+    x.fillText(new Date().toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'}),70,h-50);
+    return c;
+  }
+  $('btnCondividi').onclick = async ()=>{
+    const blob = await new Promise(r=>immagine().toBlob(r,'image/png'));
+    const file = new File([blob],'record-pesca-samu.png',{type:'image/png'});
+    try{
+      if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:'Record di pesca di Samu'}); return; }
+    }catch(e){ if(e && e.name==='AbortError') return; }
+    scarica(blob,'record-pesca-samu.png');
+    toast('Immagine salvata');
+  };
+
+  // ---------- Icona per la schermata Home dell'iPhone ----------
+  try{
+    const c = document.createElement('canvas'); c.width = c.height = 180; const x = c.getContext('2d');
+    const g = x.createLinearGradient(0,0,0,180); g.addColorStop(0,'#1d6a86'); g.addColorStop(1,'#0a2533');
+    x.fillStyle = g; x.fillRect(0,0,180,180);
+    x.translate(14,58); x.scale(1.6,1.6);
+    x.fillStyle = '#f4b81c';
+    x.fill(new Path2D(FORME.spigola({}).body)); x.fill(new Path2D(CODA.forcuta));
+    x.fillStyle = '#0a2533'; x.beginPath(); x.arc(87,17,3,0,6.28); x.fill();
+    const l = document.createElement('link'); l.rel = 'apple-touch-icon'; l.href = c.toDataURL('image/png');
+    document.head.appendChild(l);
+  }catch(e){}
+
+  render();
+})();
+</script>
+</body>
+</html>
