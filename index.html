@@ -41,7 +41,10 @@
   header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
   h1{font-size:clamp(30px,6vw,44px);margin:0;font-weight:800;letter-spacing:-.02em;line-height:1.05}
   .titolo{display:flex;align-items:center;gap:14px}
-    .faccia{width:110px;height:110px;border-radius:50%;object-fit:cover;flex-shrink:0;border:4px solid var(--boa);box-shadow:0 4px 14px rgba(0,0,0,.35);background:var(--fondale)}
+  .faccia-btn{all:unset;cursor:zoom-in;border-radius:50%;flex-shrink:0;-webkit-tap-highlight-color:transparent;transition:transform .15s}
+  .faccia-btn:active{transform:scale(.94)}
+  .faccia-btn:focus-visible{outline:3px solid var(--schiuma);outline-offset:4px}
+  .faccia{display:block;width:110px;height:110px;border-radius:50%;object-fit:cover;flex-shrink:0;border:4px solid var(--boa);box-shadow:0 4px 14px rgba(0,0,0,.35);background:var(--fondale)}
   .fucile{width:min(340px,100%);height:auto;overflow:visible;cursor:pointer;touch-action:manipulation}
   .fucile:focus-visible{outline:3px solid var(--boa);outline-offset:6px;border-radius:8px}
 
@@ -152,6 +155,8 @@
   .foto-record h2{margin:2px 0 4px;font-size:26px;line-height:1.15;color:var(--boa)}
   .foto-record p{margin:0 0 16px;font-size:20px;font-weight:800}
   .foto-record .btn{width:100%}
+  .foto-grande img{border-radius:50%;width:min(80vw,340px);height:min(80vw,340px);max-height:none;object-fit:cover;border:5px solid var(--boa)}
+  .foto-grande p{font-size:22px;font-style:italic;color:var(--schiuma)}
 
   #toast{
     position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,180px);
@@ -203,7 +208,9 @@
 
   <header>
     <div class="titolo">
-      <img class="faccia" id="fotoSamu" alt="Samu" hidden>
+      <button class="faccia-btn" id="btnFaccia" type="button" aria-label="Ingrandisci la foto di Samu" hidden>
+        <img class="faccia" id="fotoSamu" alt="Samu">
+      </button>
       <h1>Record di pesca<br>di Samu</h1>
     </div>
     <svg class="fucile" id="fucile" viewBox="0 0 340 90" role="button" tabindex="0" aria-label="Fucile da pesca: premi per sparare">
@@ -240,10 +247,10 @@
     <label class="meta">Peso (kg)
       <input id="inPeso" type="text" inputmode="decimal" placeholder="es. 3,2" required>
     </label>
-    <label class="meta"><span>Data <em>(opzionale)</em></span>
+    <label class="meta"><span>Data <em>(facoltativa)</em></span>
       <input id="inData" type="date">
     </label>
-    <label class="largo"><span>Dove / note <em>(opzionale)</em></span>
+    <label class="largo"><span>Dove / note <em>(facoltativo)</em></span>
       <input id="inNota" maxlength="80" placeholder="es. Secca di Capo Rosso, 12 m">
     </label>
     <button class="btn" type="submit">Spara!</button>
@@ -286,12 +293,25 @@
   </div>
 </dialog>
 
+<dialog class="scheda foto-record foto-grande" id="fotoGrande" aria-labelledby="fraseSamu">
+  <div class="scheda-corpo">
+    <img id="fotoGrandeImg" alt="Samu">
+    <p id="fraseSamu"></p>
+    <button class="btn" type="button" id="fotoGrandeChiudi">Chiudi</button>
+  </div>
+</dialog>
+
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 (function(){
   // Se il codice parte, l'avviso dell'anteprima non serve
   const avviso = document.getElementById('avvisoAnteprima'); if(avviso) avviso.remove();
+
+  // ====== DA PERSONALIZZARE ======
+  const FRASE_SAMU = 'oggi il menù lo sceglie il mare';   // la frase sotto la foto grande di Samu
+  const SUONO_SPLASH = true;             // metti false per togliere il suono
+  // ===============================
 
   const KEY = 'recordPesca.v3', KEY_VECCHIA = 'recordPesca.v2';
   const ridotto = matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -533,6 +553,34 @@
     clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('on'), 4000);
   }
 
+  // ---------- Suono "splash" (creato dal codice, non serve nessun file) ----------
+  let audio = null;
+  function splash(){
+    if(!SUONO_SPLASH) return;
+    try{
+      const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return;
+      audio = audio || new AC();
+      if(audio.state==='suspended') audio.resume();
+      const t = audio.currentTime, sr = audio.sampleRate;
+      // fruscio d'acqua: rumore che si spegne, filtrato dall'acuto al grave
+      const len = Math.floor(sr*0.7), buf = audio.createBuffer(1, len, sr), d = buf.getChannelData(0);
+      for(let i=0;i<len;i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/len, 2.2);
+      const rumore = audio.createBufferSource(); rumore.buffer = buf;
+      const filtro = audio.createBiquadFilter(); filtro.type = 'bandpass'; filtro.Q.value = 0.8;
+      filtro.frequency.setValueAtTime(2600, t); filtro.frequency.exponentialRampToValueAtTime(350, t+0.6);
+      const vol = audio.createGain(); vol.gain.setValueAtTime(0.0001, t);
+      vol.gain.exponentialRampToValueAtTime(0.9, t+0.02); vol.gain.exponentialRampToValueAtTime(0.0001, t+0.7);
+      rumore.connect(filtro).connect(vol).connect(audio.destination); rumore.start(t); rumore.stop(t+0.72);
+      // bollicine: tre "blop" che salgono
+      [0.12, 0.22, 0.34].forEach((ritardo, i)=>{
+        const o = audio.createOscillator(), g = audio.createGain(), t0 = t+ritardo;
+        o.type = 'sine'; o.frequency.setValueAtTime(380+i*140, t0); o.frequency.exponentialRampToValueAtTime(900+i*200, t0+0.09);
+        g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.25, t0+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0+0.1);
+        o.connect(g).connect(audio.destination); o.start(t0); o.stop(t0+0.12);
+      });
+    }catch(e){}
+  }
+
   // ---------- Fucile ----------
   function spara(){
     const asta = $('asta');
@@ -558,6 +606,7 @@
 
   $('formCattura').addEventListener('submit', e=>{
     e.preventDefault();
+    splash();   // parte subito, mentre il tocco è ancora "fresco" (serve per iPhone)
     const kg = numero($('inPeso').value);
     if(!(kg>0 && kg<1000)){ toast('Inserisci un peso valido, es. 3,2'); $('inPeso').focus(); return; }
     const giorno = $('inData').value;   // vuoto = nessuna data
@@ -619,7 +668,17 @@
     });
   }
   // Faccia di Samu accanto al titolo: file "samu.jpg" accanto a index.html
-  caricaFoto($('fotoSamu'), 'samu', ()=>{ $('fotoSamu').hidden = false; });
+  caricaFoto($('fotoSamu'), 'samu', ()=>{
+    $('btnFaccia').hidden = false;
+    $('fotoGrandeImg').src = $('fotoSamu').src;
+  });
+  // tocco sulla faccia: si apre grande con la sua frase
+  $('btnFaccia').addEventListener('click', ()=>{
+    $('fraseSamu').textContent = '“' + FRASE_SAMU + '”';
+    $('fotoGrande').showModal();
+  });
+  $('fotoGrandeChiudi').addEventListener('click', ()=>$('fotoGrande').close());
+  $('fotoGrande').addEventListener('click', e=>{ if(e.target===e.currentTarget) e.currentTarget.close(); });
   $('fotoChiudi').addEventListener('click', ()=>$('fotoRecord').close());
   $('fotoRecord').addEventListener('click', e=>{ if(e.target===e.currentTarget) e.currentTarget.close(); });
 
@@ -734,11 +793,42 @@
     bolle.forEach(disegnaBolla);
     pesciolini.forEach(disegnaPesciolino);
   }
+  // Samu che nuota: la foto "nuoto" attraversa ogni tanto lo sfondo
+  const imgNuoto = new Image();
+  let nuotoPronto = false, samuNuota = null, prossimoNuoto = performance.now() + 4000;
+  caricaFoto(imgNuoto, 'nuoto', ()=>{ nuotoPronto = true; });
+  function partiSamu(){
+    const d = Math.random()<.5 ? 1 : -1, r = piccolo() ? 34 : 44;
+    samuNuota = { x: d>0 ? -r-10 : W+r+10, y: H*.2 + Math.random()*H*.6, d, r, v: d*(piccolo() ? 1.1 : 1.4), onda: 0 };
+  }
+  function disegnaSamu(adesso){
+    if(!nuotoPronto) return;
+    if(!samuNuota && adesso > prossimoNuoto) partiSamu();
+    const s = samuNuota; if(!s) return;
+    s.x += s.v; s.onda += .06;
+    const y = s.y + Math.sin(s.onda)*10;
+    // scia di bollicine
+    if(Math.random() < .25) bolle.push({x:s.x - s.d*s.r, y:y + (Math.random()-.5)*s.r, r:2+Math.random()*4, v:.6+Math.random()*.6, o:Math.random()*6.28});
+    cm.save();
+    cm.translate(s.x, y); cm.rotate(Math.sin(s.onda)*.12);
+    cm.beginPath(); cm.arc(0,0,s.r,0,6.28); cm.closePath();
+    cm.save(); cm.clip();
+    const lato = Math.min(imgNuoto.naturalWidth, imgNuoto.naturalHeight);
+    cm.drawImage(imgNuoto, (imgNuoto.naturalWidth-lato)/2, (imgNuoto.naturalHeight-lato)/2, lato, lato, -s.r, -s.r, s.r*2, s.r*2);
+    cm.restore();
+    cm.lineWidth = 3; cm.strokeStyle = '#f4b81c'; cm.stroke();
+    cm.restore();
+    if(s.x < -s.r-40 || s.x > W+s.r+40){ samuNuota = null; prossimoNuoto = adesso + 12000 + Math.random()*13000; }
+  }
+  // tenere sotto controllo le bolle in più create dalla scia
+  function potaBolle(){ if(bolle.length > 60) bolle.splice(22, bolle.length-60); }
+
   ridimensiona();
   addEventListener('resize', ridimensiona);
   for(let i=0;i<22;i++) bolle.push(nuovaBolla(true));
   for(let i=0;i<3;i++) pesciolini.push(nuovoPesciolino(true));
-  function ciclo(){
+  function ciclo(adesso){
+    adesso = adesso || performance.now();
     cm.clearRect(0,0,W,H);
     bolle.forEach((b,i)=>{
       b.y -= b.v; b.o += .02; if(b.y < -10) bolle[i] = nuovaBolla(false);
@@ -746,6 +836,7 @@
     });
     if(pesciolini.length < maxPesciolini() && Math.random() < .012) pesciolini.push(nuovoPesciolino(false));
     pesciolini = pesciolini.filter(f=>{ f.x += f.v; f.onda += .05; disegnaPesciolino(f); return f.x>-80 && f.x<W+80; });
+    disegnaSamu(adesso); potaBolle();
     cf.clearRect(0,0,W,H);
     particelle = particelle.filter(q=>{
       q.x += q.vx; q.y += q.vy; q.vy += q.g; q.vita--;
